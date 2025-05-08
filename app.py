@@ -84,8 +84,8 @@ with st.sidebar:
     with resolution_col1:
         output_resolution = st.selectbox(
             "Select Resolution",
-            options=["1024x1024", "1792x1024", "1024x1792"],
-            index=0,
+            options=["1024x1024", "1024x1536", "1536x1024", "auto"],
+            index=3,
             help="Select the resolution for the edited images. Different resolutions are better for different types of images."
         )
     
