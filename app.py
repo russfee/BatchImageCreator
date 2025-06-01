@@ -8,17 +8,55 @@ import requests
 from utils import process_image_with_openai, save_results_to_file, edit_image_with_openai, create_zip_of_edited_images
 import time
 import hmac
+import logging
+from datetime import datetime
+from streamlit_limiter import limiter
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+def log_activity(action: str, success: bool, **kwargs):
+    """Helper function to log activities"""
+    ip = st.experimental_get_http_headers().get('X-Forwarded-For', 'unknown')
+    user_agent = st.experimental_get_http_headers().get('User-Agent', 'unknown')
+    
+    log_data = {
+        'timestamp': datetime.utcnow().isoformat(),
+        'action': action,
+        'success': success,
+        'ip': ip,
+        'user_agent': user_agent,
+        **kwargs
+    }
+    logger.info(f"{action} - Success: {success} - IP: {ip}")
+    return log_data
+
+@limiter.limit("5 per minute")
 def check_password():
     """Returns `True` if the user had the correct password."""
 
     def password_entered():
         """Checks whether a password entered by the user is correct."""
-        if hmac.compare_digest(st.session_state["password"], st.secrets["secrets"]["password"]):
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # Don't store the password.
-        else:
+        try:
+            if hmac.compare_digest(st.session_state["password"], st.secrets["secrets"]["password"]):
+                st.session_state["password_correct"] = True
+                log_activity("Login", True)
+                del st.session_state["password"]  # Don't store the password.
+            else:
+                log_activity("Login Attempt", False, reason="Incorrect password")
+                st.session_state["password_correct"] = False
+        except Exception as e:
+            log_activity("Login Error", False, error=str(e))
             st.session_state["password_correct"] = False
+            st.error("An error occurred during authentication")
 
     # Return True if the password is validated.
     if st.session_state.get("password_correct", False):
@@ -32,8 +70,13 @@ def check_password():
         st.error("😕 Password incorrect")
     return False
 
-if not check_password():
-    st.stop()  # Do not continue if check_password is not True.
+try:
+    if not check_password():
+        st.stop()  # Do not continue if check_password is not True.
+except Exception as e:
+    log_activity("Rate Limit Exceeded", False, error=str(e))
+    st.error("Too many login attempts. Please try again in a minute.")
+    st.stop()
 
 # Set the page title and configuration
 st.set_page_config(
