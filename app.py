@@ -1,4 +1,12 @@
 import streamlit as st
+
+# Set page config must be the first Streamlit command
+st.set_page_config(
+    page_title="OpenAI Image Editor",
+    page_icon="🖼️",
+    layout="wide"
+)
+
 import os
 import base64
 from PIL import Image
@@ -102,12 +110,9 @@ if st.secrets.get("secrets", {}).get("admin_password"):
                 except Exception as e:
                     st.sidebar.error(f"Error reading logs: {str(e)}")
 
-# Set the page title and configuration
-st.set_page_config(
-    page_title="OpenAI Image Editor",
-    page_icon="🖼️",
-    layout="wide"
-)
+# Page title and header
+st.title("OpenAI Image Editor")
+st.write("Upload your images and edit them with AI")
 
 # Add custom CSS to style the quick prompt bubbles
 st.markdown("""
