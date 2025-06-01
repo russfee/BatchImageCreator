@@ -23,22 +23,35 @@ from datetime import datetime
 
 # Configure logging
 log_dir = 'logs'
-os.makedirs(log_dir, exist_ok=True)
-log_file = os.path.join(log_dir, 'app.log')
-
-# Clear previous log file if it gets too large
-if os.path.exists(log_file) and os.path.getsize(log_file) > 5 * 1024 * 1024:  # 5MB
-    open(log_file, 'w').close()
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(log_file, encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+try:
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, 'app.log')
+    
+    # Create a file handler that writes to the log file
+    file_handler = logging.FileHandler(log_file, encoding='utf-8')
+    file_handler.setLevel(logging.INFO)
+    
+    # Create a formatter and add it to the handler
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    
+    # Get the root logger and add the file handler
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    
+    # Clear existing handlers to avoid duplicates
+    if logger.hasHandlers():
+        logger.handlers.clear()
+    
+    logger.addHandler(file_handler)
+    logger.addHandler(logging.StreamHandler())
+    
+    # Test the logger
+    logger.info("Application started - Logger initialized successfully")
+    
+except Exception as e:
+    print(f"Error setting up logging: {str(e)}")
+    raise
 
 def log_activity(action: str, success: bool, **kwargs):
     """Helper function to log activities"""
@@ -100,15 +113,33 @@ if st.secrets.get("secrets", {}).get("admin_password"):
     if st.sidebar.checkbox("Show Admin Controls"):
         admin_pass = st.sidebar.text_input("Admin Password", type="password")
         if admin_pass == st.secrets["secrets"]["admin_password"]:
+            st.sidebar.success("Admin access granted!")
+            
+            # Add a test log entry
+            if st.sidebar.button("Add Test Log Entry"):
+                logging.info("This is a test log entry from the admin panel")
+                st.sidebar.success("Test log entry added!")
+            
+            # View logs
             if st.sidebar.button("View Logs"):
                 try:
-                    with open('logs/app.log', 'r') as f:
-                        logs = f.read()
-                    st.sidebar.text_area("Application Logs", logs, height=300)
-                except FileNotFoundError:
-                    st.sidebar.error("Log file not found")
+                    log_file = os.path.join('logs', 'app.log')
+                    if os.path.exists(log_file):
+                        with open(log_file, 'r') as f:
+                            logs = f.read()
+                        if not logs.strip():
+                            st.sidebar.warning("Log file exists but is empty")
+                            logging.info("This is a test log entry to verify logging works")
+                            st.sidebar.info("Added a test log entry. Try viewing logs again.")
+                        else:
+                            st.sidebar.text_area("Application Logs", logs, height=300)
+                    else:
+                        st.sidebar.warning("Log file not found. Creating a test log entry...")
+                        logging.info("Creating initial log file with this test entry")
+                        st.sidebar.info("Log file created. Click 'View Logs' again to see the content.")
                 except Exception as e:
                     st.sidebar.error(f"Error reading logs: {str(e)}")
+                    logging.error(f"Error in log viewer: {str(e)}")
 
 # Page title and header
 st.title("OpenAI Image Editor")
