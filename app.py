@@ -14,11 +14,19 @@ from datetime import datetime
 # from streamlit_limiter import limiter
 
 # Configure logging
+log_dir = 'logs'
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, 'app.log')
+
+# Clear previous log file if it gets too large
+if os.path.exists(log_file) and os.path.getsize(log_file) > 5 * 1024 * 1024:  # 5MB
+    open(log_file, 'w').close()
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('app.log'),
+        logging.FileHandler(log_file, encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -78,6 +86,21 @@ def check_password():
 
 if not check_password():
     st.stop()  # Do not continue if check_password is not True.
+
+# Admin section for log viewing
+if st.secrets.get("secrets", {}).get("admin_password"):
+    if st.sidebar.checkbox("Show Admin Controls"):
+        admin_pass = st.sidebar.text_input("Admin Password", type="password")
+        if admin_pass == st.secrets["secrets"]["admin_password"]:
+            if st.sidebar.button("View Logs"):
+                try:
+                    with open('logs/app.log', 'r') as f:
+                        logs = f.read()
+                    st.sidebar.text_area("Application Logs", logs, height=300)
+                except FileNotFoundError:
+                    st.sidebar.error("Log file not found")
+                except Exception as e:
+                    st.sidebar.error(f"Error reading logs: {str(e)}")
 
 # Set the page title and configuration
 st.set_page_config(
