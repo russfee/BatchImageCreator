@@ -10,7 +10,8 @@ import time
 import hmac
 import logging
 from datetime import datetime
-from streamlit_limiter import limiter
+# Temporarily disabled rate limiter for deployment
+# from streamlit_limiter import limiter
 
 # Configure logging
 logging.basicConfig(
@@ -39,7 +40,6 @@ def log_activity(action: str, success: bool, **kwargs):
     logger.info(f"{action} - Success: {success} - IP: {ip}")
     return log_data
 
-@limiter.limit("5 per minute")
 def check_password():
     """Returns `True` if the user had the correct password."""
 
@@ -70,13 +70,8 @@ def check_password():
         st.error("😕 Password incorrect")
     return False
 
-try:
-    if not check_password():
-        st.stop()  # Do not continue if check_password is not True.
-except Exception as e:
-    log_activity("Rate Limit Exceeded", False, error=str(e))
-    st.error("Too many login attempts. Please try again in a minute.")
-    st.stop()
+if not check_password():
+    st.stop()  # Do not continue if check_password is not True.
 
 # Set the page title and configuration
 st.set_page_config(
