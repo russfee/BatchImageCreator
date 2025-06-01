@@ -224,8 +224,9 @@ st.markdown("""
 with st.sidebar:
     st.header("Configuration")
     
-    # API Key input
-    api_key = st.text_input("OpenAI API Key", type="password", value=os.environ.get("OPENAI_API_KEY", ""))
+    # Use API key from Streamlit secrets
+    api_key = st.secrets["secrets"]["openai_api_key"]
+    st.info("🔑 Using provided API key")
     
     # Image resolution selection
     st.subheader("Output Resolution")
@@ -302,7 +303,8 @@ with st.sidebar:
     
     if st.button("Edit All Images"):
         if not api_key:
-            st.error("Please enter your OpenAI API key.")
+            st.error("API key not found. Please contact support.")
+            st.stop()
         elif len(st.session_state.loaded_images) == 0:
             st.error("Please upload images or load them from a directory first.")
         else:
