@@ -26,21 +26,99 @@ A powerful Streamlit-based application for batch processing and editing images u
 
 ## Installation
 
+### Local Development
+
 1. Clone this repository:
 ```bash
 git clone https://github.com/yourusername/openai-image-editor.git
 cd openai-image-editor
 ```
 
-2. Install the required packages:
+2. Create a virtual environment (recommended):
 ```bash
-pip install openai pillow streamlit zipfile36
+python -m venv venv
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
 ```
 
-3. Set up your OpenAI API key as an environment variable (optional):
+3. Install the required packages:
 ```bash
-export OPENAI_API_KEY="your-api-key-here"
+pip install -r requirements.txt
 ```
+
+4. Set up your environment variables:
+   - Copy `.env.example` to `.env`
+   - Add your OpenAI API key to the `.env` file
+
+5. Run the application locally:
+```bash
+streamlit run app.py
+```
+
+The application will be available at http://localhost:8501
+
+## Deployment
+
+### Option 1: Streamlit Cloud (Recommended)
+
+1. Push your code to a GitHub repository
+2. Go to [Streamlit Cloud](https://streamlit.io/cloud) and sign in with your GitHub account
+3. Click "New app" and select your repository
+4. Set the following configuration:
+   - Branch: `main` (or your preferred branch)
+   - Main file path: `app.py`
+   - Python version: 3.8 or higher
+5. Add your OpenAI API key as a secret in the "Advanced settings" section:
+   - Click "Advanced settings..."
+   - Add a new secret: `OPENAI_API_KEY` with your API key as the value
+6. Click "Deploy!"
+
+### Option 2: Hugging Face Spaces (Free with GPU)
+
+1. Create an account on [Hugging Face](https://huggingface.co/)
+2. Create a new Space and select "Streamlit" as the SDK
+3. Push your code to the Space's repository
+4. Add your OpenAI API key in the Space's settings:
+   - Go to Settings → Repository secrets
+   - Add a new secret: `OPENAI_API_KEY` with your API key as the value
+
+### Option 3: Docker Deployment
+
+1. Create a `Dockerfile` in your project root:
+
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8501
+
+HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
+
+ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+```
+
+2. Build and run the Docker container:
+```bash
+docker build -t batch-image-creator .
+docker run -p 8501:8501 -e OPENAI_API_KEY=your_api_key_here batch-image-creator
+```
+
+3. Deploy the container to your preferred cloud provider (AWS ECS, Google Cloud Run, etc.)
+
+## Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+Or set them in your deployment platform's environment settings.
 
 ## Usage
 
