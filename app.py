@@ -82,7 +82,20 @@ def check_password():
     # Initialize session state if not exists
     if 'password_correct' not in st.session_state:
         st.session_state['password_correct'] = False
-        
+        st.session_state['login_attempts'] = 0
+        st.session_state['last_attempt_time'] = 0
+    
+    # Check rate limiting
+    current_time = time.time()
+    if st.session_state.get('login_attempts', 0) >= 5:  # Max 5 attempts
+        if current_time - st.session_state['last_attempt_time'] < 300:  # 5 minute cooldown
+            wait_time = int(300 - (current_time - st.session_state['last_attempt_time']))
+            st.error(f"Too many failed attempts. Please try again in {wait_time} seconds.")
+            return False
+        else:
+            # Reset attempts after cooldown
+            st.session_state['login_attempts'] = 0
+    
     # If already authenticated, return True
     if st.session_state.get('password_correct', False):
         return True
@@ -94,11 +107,18 @@ def check_password():
         try:
             if hmac.compare_digest(password, st.secrets["secrets"]["password"]):
                 st.session_state["password_correct"] = True
+                st.session_state["login_attempts"] = 0  # Reset on successful login
                 log_activity("Login", True)
                 st.rerun()  # Rerun to update the UI
             else:
-                log_activity("Login Attempt", False, reason="Incorrect password")
-                st.error("😕 Password incorrect")
+                st.session_state["login_attempts"] = st.session_state.get("login_attempts", 0) + 1
+                st.session_state["last_attempt_time"] = time.time()
+                attempts_left = max(0, 5 - st.session_state["login_attempts"])
+                log_activity("Login Attempt", False, reason="Incorrect password", attempts_left=attempts_left)
+                if attempts_left > 0:
+                    st.error(f"😕 Incorrect password. {attempts_left} attempts left.")
+                else:
+                    st.error("🔒 Too many failed attempts. Please try again later.")
         except Exception as e:
             log_activity("Login Error", False, error=str(e))
             st.error("An error occurred during authentication")
