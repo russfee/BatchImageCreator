@@ -26,8 +26,15 @@ logger = logging.getLogger(__name__)
 
 def log_activity(action: str, success: bool, **kwargs):
     """Helper function to log activities"""
-    ip = st.experimental_get_http_headers().get('X-Forwarded-For', 'unknown')
-    user_agent = st.experimental_get_http_headers().get('User-Agent', 'unknown')
+    try:
+        # Try to get HTTP headers if available
+        headers = st.experimental_get_http_headers()
+        ip = headers.get('X-Forwarded-For', 'unknown')
+        user_agent = headers.get('User-Agent', 'unknown')
+    except:
+        # Fallback if headers are not available
+        ip = 'not_available'
+        user_agent = 'not_available'
     
     log_data = {
         'timestamp': datetime.utcnow().isoformat(),
@@ -42,33 +49,32 @@ def log_activity(action: str, success: bool, **kwargs):
 
 def check_password():
     """Returns `True` if the user had the correct password."""
-
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
+    
+    # Initialize session state if not exists
+    if 'password_correct' not in st.session_state:
+        st.session_state['password_correct'] = False
+        
+    # If already authenticated, return True
+    if st.session_state.get('password_correct', False):
+        return True
+        
+    # Show password input
+    password = st.text_input("Password", type="password", key="password_input")
+    
+    if password:  # Only check if password was entered
         try:
-            if hmac.compare_digest(st.session_state["password"], st.secrets["secrets"]["password"]):
+            if hmac.compare_digest(password, st.secrets["secrets"]["password"]):
                 st.session_state["password_correct"] = True
                 log_activity("Login", True)
-                del st.session_state["password"]  # Don't store the password.
+                st.rerun()  # Rerun to update the UI
             else:
                 log_activity("Login Attempt", False, reason="Incorrect password")
-                st.session_state["password_correct"] = False
+                st.error("😕 Password incorrect")
         except Exception as e:
             log_activity("Login Error", False, error=str(e))
-            st.session_state["password_correct"] = False
             st.error("An error occurred during authentication")
-
-    # Return True if the password is validated.
-    if st.session_state.get("password_correct", False):
-        return True
-
-    # Show input for password.
-    st.text_input(
-        "Password", type="password", on_change=password_entered, key="password"
-    )
-    if "password_correct" in st.session_state:
-        st.error("😕 Password incorrect")
-    return False
+    
+    return st.session_state.get("password_correct", False)
 
 if not check_password():
     st.stop()  # Do not continue if check_password is not True.
