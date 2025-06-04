@@ -205,12 +205,12 @@ if 'current_image_index' not in st.session_state:
 
 # Preset prompts for quick selection
 PRESET_PROMPTS = [
-    "Clear the room of all furniture",
-    "Clear the room of furniture and stage as a modern living room",
-    "Clear the room of furniture and stage as a modern bedroom",
-    "Declutter this room",
-    "Stage as a minimalist space",
-    "Add modern decor"
+    "Clear the room of all furniture. Keep the flooring and paint color.",
+    "Clear the room of furniture and stage as a modern living room. Keep the flooring and paint color.",
+    "Clear the room of furniture and stage as a modern bedroom. Keep the flooring and paint color.",
+    "Declutter this room. Keep the flooring and paint color.",
+    "Stage as a minimalist space. Keep the flooring and paint color.",
+    "Add modern decor. Keep the existing flooring and paint color."
 ]
 
 # Title and introduction
