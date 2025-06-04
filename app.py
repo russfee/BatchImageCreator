@@ -235,8 +235,8 @@ with st.sidebar:
     with resolution_col1:
         output_resolution = st.selectbox(
             "Select Resolution",
-            options=["1024x1024", "1024x1536", "1536x1024", "auto"],
-            index=3,
+            options=["1024x1024", "1024x1536", "1536x1024", "1500x1000", "auto"],
+            index=4,
             help="Select the resolution for the edited images. Different resolutions are better for different types of images."
         )
     
@@ -244,12 +244,16 @@ with st.sidebar:
         # Show a visual representation of the selected resolution
         if output_resolution == "1024x1024":
             st.caption("1:1 Square format (standard)")
-        elif output_resolution == "1792x1024":
-            st.caption("1.75:1 Landscape format (wide)")
-        elif output_resolution == "1024x1792":
-            st.caption("1:1.75 Portrait format (tall)")
+        elif output_resolution == "1500x1000":
+            st.caption("3:2 Landscape format (1500x1000)")
+        elif output_resolution == "1536x1024":
+            st.caption("3:2 Landscape format (1536x1024)")
+        elif output_resolution == "1024x1536":
+            st.caption("2:3 Portrait format (tall)")
+        elif output_resolution == "auto":
+            st.caption("Auto-detect from input image")
     
-    st.markdown("""<small>Note: Smaller resolutions may result in more consistent image edits, while larger resolutions offer more detail but may have artifacts.</small>""", unsafe_allow_html=True)
+    st.markdown("""<small>Note: 'Auto' will select the best resolution to match your input image's aspect ratio. Smaller resolutions may be more consistent, while larger ones offer more detail.</small>""", unsafe_allow_html=True)
     
     # Note about editing
     st.info("Provide editing prompts for each image in the main panel. Each image can have its own custom editing prompt.")
@@ -347,12 +351,29 @@ with st.sidebar:
                             st.warning(f"Skipping image {i+1} because it has an empty prompt.")
                             continue
                         
+                        # Determine the resolution to use
+                        resolution = output_resolution
+                        if output_resolution == "auto":
+                            # Get image dimensions
+                            width, height = img.size
+                            aspect_ratio = width / height
+                            
+                            # Choose the closest standard resolution while maintaining aspect ratio
+                            if 0.9 <= aspect_ratio <= 1.1:  # Close to square
+                                resolution = "1024x1024"
+                            elif aspect_ratio > 1.4:  # Very wide landscape (wider than 3:2)
+                                resolution = "1500x1000"
+                            elif aspect_ratio > 1.1:  # Standard landscape (3:2)
+                                resolution = "1536x1024"
+                            else:  # Portrait
+                                resolution = "1024x1536"
+                        
                         # Edit the image
                         edited_url = edit_image_with_openai(
                             api_key,
                             img,
                             edit_prompt,
-                            size=output_resolution  # Pass the selected resolution
+                            size=resolution  # Use the determined resolution
                         )
                         
                         # Store the edited image URL
