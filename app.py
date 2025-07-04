@@ -259,46 +259,89 @@ with st.sidebar:
     
     # File upload section
     st.subheader("Upload Images")
-    uploaded_files = st.file_uploader("Choose images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+    
+    # Supported image formats
+    supported_formats = ["jpg", "jpeg", "png", "JPG", "JPEG", "PNG", "webp", "WEBP"]
+    
+    # File uploader with supported formats and better help text
+    uploaded_files = st.file_uploader(
+        "Choose images",
+        type=supported_formats,
+        accept_multiple_files=True,
+        help=f"Supported formats: {', '.join(supported_formats)}"
+    )
+    
+    # Display warning if unsupported files are uploaded
+    if uploaded_files:
+        invalid_files = [file.name for file in uploaded_files 
+                       if not any(file.name.lower().endswith(ext) for ext in [f".{f}" for f in supported_formats])]
+        
+        if invalid_files:
+            st.warning(f"The following files have unsupported formats and will be ignored: {', '.join(invalid_files)}")
+            # Filter out unsupported files
+            uploaded_files = [file for file in uploaded_files 
+                           if any(file.name.lower().endswith(ext) for ext in [f".{f}" for f in supported_formats])]
     
     # Folder path input
-    folder_path = st.text_input("Or enter a local directory path:", help="Enter the full path to a folder containing images")
+    folder_path = st.text_input(
+        "Or enter a local directory path:", 
+        help="Enter the full path to a folder containing images. Only images with supported formats will be loaded."
+    )
     
     if st.button("Load from Directory") and folder_path:
         try:
             if os.path.exists(folder_path) and os.path.isdir(folder_path):
                 # Clear previous images
                 st.session_state.loaded_images = []
-                st.session_state.image_paths = []
-                st.session_state.processed_results = []
-                st.session_state.processing_complete = False
                 
-                valid_extensions = ['.jpg', '.jpeg', '.png']
-                loaded_count = 0
+                # Get all files from the directory and filter by supported formats
+                supported_extensions = [f".{ext}" for ext in supported_formats]
+                all_files = os.listdir(folder_path)
                 
-                for filename in os.listdir(folder_path):
-                    file_path = os.path.join(folder_path, filename)
-                    if os.path.isfile(file_path) and any(filename.lower().endswith(ext) for ext in valid_extensions):
+                # Filter for image files with supported extensions (case-insensitive)
+                image_files = [f for f in all_files 
+                             if os.path.isfile(os.path.join(folder_path, f)) 
+                             and any(f.lower().endswith(ext) for ext in [e.lower() for e in supported_extensions])]
+                
+                # Find unsupported files for warning message
+                unsupported_files = [f for f in all_files 
+                                   if os.path.isfile(os.path.join(folder_path, f)) 
+                                   and not any(f.lower().endswith(ext) for ext in [e.lower() for e in supported_extensions])
+                                   and os.path.splitext(f)[1]]  # Only show files with extensions
+                
+                if unsupported_files:
+                    st.warning(f"Skipped {len(unsupported_files)} unsupported files in the directory.")
+                
+                if not image_files:
+                    st.warning("No supported image files found in the specified directory. "
+                             f"Supported formats: {', '.join(supported_formats)}")
+                else:
+                    # Load images with progress feedback
+                    progress_bar = st.progress(0)
+                    loaded_count = 0
+                    
+                    for i, img_file in enumerate(image_files):
                         try:
-                            img = Image.open(file_path)
-                            # Convert to RGB if RGBA
-                            if img.mode == 'RGBA':
-                                img = img.convert('RGB')
-                            
-                            img_byte_arr = io.BytesIO()
-                            img.save(img_byte_arr, format=img.format if img.format else 'JPEG')
-                            st.session_state.loaded_images.append(img)
-                            st.session_state.image_paths.append(file_path)
+                            img_path = os.path.join(folder_path, img_file)
+                            image = Image.open(img_path)
+                            st.session_state.loaded_images.append({
+                                'image': image,
+                                'name': img_file,
+                                'prompt': ''
+                            })
                             loaded_count += 1
                         except Exception as e:
-                            st.warning(f"Could not load {filename}: {str(e)}")
-                
-                st.success(f"Loaded {loaded_count} images from directory.")
-                st.rerun()
+                            st.error(f"Error loading {img_file}: {str(e)}")
+                        
+                        # Update progress
+                        progress = (i + 1) / len(image_files)
+                        progress_bar.progress(progress)
+                    
+                    st.success(f"Successfully loaded {loaded_count} of {len(image_files)} images from directory.")
             else:
-                st.error("The provided path does not exist or is not a directory.")
+                st.error("Invalid directory path. Please check and try again.")
         except Exception as e:
-            st.error(f"Error loading from directory: {str(e)}")
+            st.error(f"An error occurred while loading images: {str(e)}")
     
     # Process buttons
     st.subheader("Process Images")
