@@ -260,27 +260,31 @@ with st.sidebar:
     # File upload section
     st.subheader("Upload Images")
     
-    # Supported image formats
-    supported_formats = ["jpg", "jpeg", "png", "JPG", "JPEG", "PNG", "webp", "WEBP"]
+    # Supported image formats (lowercase only, as Streamlit handles case sensitivity internally)
+    supported_formats = ["jpg", "jpeg", "png", "webp"]
     
     # File uploader with supported formats and better help text
     uploaded_files = st.file_uploader(
         "Choose images",
         type=supported_formats,
         accept_multiple_files=True,
-        help=f"Supported formats: {', '.join(supported_formats)}"
+        help=f"Supported formats: {', '.join(supported_formats)} (case-insensitive)"
     )
     
-    # Display warning if unsupported files are uploaded
+    # Debug: Print uploaded files info
+    if uploaded_files:
+        st.sidebar.write("Debug - Uploaded files:")
+        for file in uploaded_files:
+            st.sidebar.write(f"- {file.name} (type: {file.type}, size: {len(file.getvalue())} bytes)")
+    
+    # Display warning if unsupported files are uploaded (this is just a fallback)
     if uploaded_files:
         invalid_files = [file.name for file in uploaded_files 
-                       if not any(file.name.lower().endswith(ext) for ext in [f".{f}" for f in supported_formats])]
+                       if not any(file.name.lower().endswith(f".{ext}") for ext in supported_formats)]
         
         if invalid_files:
-            st.warning(f"The following files have unsupported formats and will be ignored: {', '.join(invalid_files)}")
-            # Filter out unsupported files
-            uploaded_files = [file for file in uploaded_files 
-                           if any(file.name.lower().endswith(ext) for ext in [f".{f}" for f in supported_formats])]
+            st.warning(f"The following files have unsupported formats: {', '.join(invalid_files)}")
+            st.info("Supported formats: " + ", ".join(f".{ext}" for ext in supported_formats))
     
     # Folder path input
     folder_path = st.text_input(
