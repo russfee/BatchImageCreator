@@ -235,21 +235,19 @@ with st.sidebar:
     with resolution_col1:
         output_resolution = st.selectbox(
             "Select Resolution",
-            options=["1024x1024", "1024x1536", "1536x1024", "1500x1000", "auto"],
-            index=4,
-            help="Select the resolution for the edited images. Different resolutions are better for different types of images."
+            options=["auto", "1024x1024", "1024x1536", "1536x1024"],
+            index=0,
+            key="resolution_select"
         )
     
     with resolution_col2:
         # Show a visual representation of the selected resolution
         if output_resolution == "1024x1024":
-            st.caption("1:1 Square format (standard)")
-        elif output_resolution == "1500x1000":
-            st.caption("3:2 Landscape format (1500x1000)")
+            st.caption("1:1 Square format (1024x1024)")
         elif output_resolution == "1536x1024":
             st.caption("3:2 Landscape format (1536x1024)")
         elif output_resolution == "1024x1536":
-            st.caption("2:3 Portrait format (tall)")
+            st.caption("2:3 Portrait format (1024x1536)")
         elif output_resolution == "auto":
             st.caption("Auto-detect from input image")
     
@@ -361,12 +359,12 @@ with st.sidebar:
                             # Choose the closest standard resolution while maintaining aspect ratio
                             if 0.9 <= aspect_ratio <= 1.1:  # Close to square
                                 resolution = "1024x1024"
-                            elif aspect_ratio > 1.4:  # Very wide landscape (wider than 3:2)
-                                resolution = "1500x1000"
-                            elif aspect_ratio > 1.1:  # Standard landscape (3:2)
+                            elif aspect_ratio > 1:  # Landscape
                                 resolution = "1536x1024"
                             else:  # Portrait
                                 resolution = "1024x1536"
+                        else:
+                            resolution = output_resolution
                         
                         # Edit the image
                         edited_url = edit_image_with_openai(

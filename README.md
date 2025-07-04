@@ -4,6 +4,21 @@ A powerful Streamlit-based application for batch processing and editing images u
 
 ![OpenAI Image Editor](attached_assets/Screenshot%202025-05-03%20at%2010.51.54%20AM.png)
 
+## 🚀 Quick Start
+
+1. **Launch the app** (requires Python 3.6+):
+   ```bash
+   streamlit run app.py
+   ```
+
+2. **Access the app** in your browser at `http://localhost:8501`
+
+3. **Enter the password** when prompted
+
+4. **Start editing images** with AI-powered transformations
+
+For detailed setup and advanced usage, see the sections below.
+
 ## Features
 
 ### Image Handling
@@ -153,9 +168,10 @@ The application comes with several preset prompts specifically designed for inte
 
 Control the output image size by selecting one of these resolution options:
 
-- **Square format** (1024x1024) - Standard option with balanced dimensions
-- **Landscape format** (1792x1024) - Better for wide scenes and rooms
-- **Portrait format** (1024x1792) - Better for tall images or vertical spaces
+- **Auto** (Recommended) - Automatically selects the best resolution based on the input image's aspect ratio
+- **Square format** (1024x1024) - Perfect square format for balanced images
+- **Portrait format** (1024x1536) - Taller format for portrait-oriented images
+- **Landscape format** (1536x1024) - Wider format for landscape-oriented images
 
 ## Requirements
 
